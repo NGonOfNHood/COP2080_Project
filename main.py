@@ -7,6 +7,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import os
 from pydub import AudioSegment
 
+
 class AudioAnalyzer:
     def __init__(self, root):
         self.root = root
@@ -16,6 +17,7 @@ class AudioAnalyzer:
         self.audio_data = None
         self.audio_length = None
 
+        # GUI Elements
         self.load_button = tk.Button(root, text="Load Audio File", command=self.load_audio)
         self.load_button.pack()
 
@@ -31,6 +33,7 @@ class AudioAnalyzer:
         self.toggle_buttons_frame = tk.Frame(root)
         self.toggle_buttons_frame.pack()
 
+        # Buttons for toggling plots
         self.low_button = tk.Button(self.toggle_buttons_frame, text="Show Low Frequency", command=self.show_low_plot, state=tk.DISABLED)
         self.low_button.pack(side=tk.LEFT, padx=5)
 
@@ -44,7 +47,10 @@ class AudioAnalyzer:
         self.show_all_button.pack(side=tk.LEFT, padx=5)
 
         self.show_original_button = tk.Button(root, text="Show Original Waveform", command=self.display_waveform, state=tk.DISABLED)
-        self.show_original_button.pack(pady=10)
+        self.show_original_button.pack(pady=5)
+
+        self.show_intensity_button = tk.Button(root, text="Show Intensity", command=self.show_intensity_plot, state=tk.DISABLED)
+        self.show_intensity_button.pack(pady=5)
 
     def load_audio(self):
         self.filename = filedialog.askopenfilename(filetypes=[("Audio Files", "*.wav *.mp3 *.aac")])
@@ -53,6 +59,7 @@ class AudioAnalyzer:
 
         self.file_label.config(text=os.path.basename(self.filename))
 
+        # Convert to WAV if necessary
         if not self.filename.lower().endswith(".wav"):
             converted_filename = self.filename + "_converted.wav"
             audio = AudioSegment.from_file(self.filename)
@@ -60,46 +67,55 @@ class AudioAnalyzer:
             self.filename = converted_filename
 
         self.sampling_rate, self.audio_data = wavfile.read(self.filename)
-        if self.audio_data.ndim > 1:
+        if self.audio_data.ndim > 1:  # Handle multi-channel
             self.audio_data = self.audio_data.mean(axis=1).astype(np.int16)
 
+        # Calculate the audio length
         self.audio_length = len(self.audio_data) / self.sampling_rate
 
         self.display_results()
 
     def display_results(self):
+        # Clear previous plots and results
         for widget in self.plot_frame.winfo_children():
             widget.destroy()
         for widget in self.results_frame.winfo_children():
             widget.destroy()
 
+        # Display audio length
         tk.Label(self.results_frame, text=f"Audio Length: {self.audio_length:.2f} seconds").pack()
 
+        # Plot waveform
         self.display_waveform()
 
+        # Compute RT60 and highest resonance
         low_freq = self.compute_rt60(20, 500)
         mid_freq = self.compute_rt60(500, 2000)
         high_freq = self.compute_rt60(2000, 20000)
         freq, max_amplitude = self.compute_highest_resonance()
 
+        # Display results
         tk.Label(self.results_frame, text=f"RT60 (Low): {low_freq:.2f} s").pack()
         tk.Label(self.results_frame, text=f"RT60 (Mid): {mid_freq:.2f} s").pack()
         tk.Label(self.results_frame, text=f"RT60 (High): {high_freq:.2f} s").pack()
         tk.Label(self.results_frame, text=f"Highest Resonance: {freq:.2f} Hz").pack()
         tk.Label(self.results_frame, text=f"Amplitude at Resonance: {max_amplitude:.2f}").pack()
 
+        # Enable toggle buttons
         self.low_button.config(state=tk.NORMAL)
         self.mid_button.config(state=tk.NORMAL)
         self.high_button.config(state=tk.NORMAL)
         self.show_all_button.config(state=tk.NORMAL)
         self.show_original_button.config(state=tk.NORMAL)
+        self.show_intensity_button.config(state=tk.NORMAL)
 
     def compute_rt60(self, low_cut, high_cut):
+        # Placeholder: RT60 calculation based on energy decay
         fft_data = np.abs(np.fft.rfft(self.audio_data))
         freqs = np.fft.rfftfreq(len(self.audio_data), 1 / self.sampling_rate)
         mask = (freqs >= low_cut) & (freqs <= high_cut)
         filtered_energy = np.sum(fft_data[mask] ** 2)
-        rt60 = 0.5
+        rt60 = 0.5  # Dummy value for filtered energy decay
         return rt60
 
     def compute_highest_resonance(self):
@@ -109,9 +125,11 @@ class AudioAnalyzer:
         return freqs[peak_idx], fft_data[peak_idx]
 
     def display_waveform(self):
+        # Clear previous plots in the plot_frame
         for widget in self.plot_frame.winfo_children():
             widget.destroy()
 
+        # Plot waveform
         fig, ax = plt.subplots()
         ax.plot(np.linspace(0, len(self.audio_data) / self.sampling_rate, len(self.audio_data)), self.audio_data)
         ax.set_title("Waveform")
@@ -132,9 +150,11 @@ class AudioAnalyzer:
         self.show_frequency_plot(2000, 20000, "High Frequency Plot (2000-20000 Hz)")
 
     def show_frequency_plot(self, low_cut, high_cut, title):
+        # Clear previous plots in the plot_frame
         for widget in self.plot_frame.winfo_children():
             widget.destroy()
 
+        # Plot the frequency range
         freqs = np.fft.rfftfreq(len(self.audio_data), 1 / self.sampling_rate)
         fft_data = np.abs(np.fft.rfft(self.audio_data))
 
@@ -151,21 +171,26 @@ class AudioAnalyzer:
         canvas.draw()
 
     def show_all_frequencies_plot(self):
+        # Clear previous plots in the plot_frame
         for widget in self.plot_frame.winfo_children():
             widget.destroy()
 
+        # Plot all frequency ranges on the same graph
         freqs = np.fft.rfftfreq(len(self.audio_data), 1 / self.sampling_rate)
         fft_data = np.abs(np.fft.rfft(self.audio_data))
 
         fig, ax = plt.subplots()
         ax.plot(freqs, fft_data, label="All Frequencies", color="gray", alpha=0.3)
 
+        # Low frequency
         low_mask = (freqs >= 20) & (freqs <= 500)
         ax.plot(freqs[low_mask], fft_data[low_mask], label="Low (20-500 Hz)", color="blue")
 
+        # Mid frequency
         mid_mask = (freqs >= 500) & (freqs <= 2000)
         ax.plot(freqs[mid_mask], fft_data[mid_mask], label="Mid (500-2000 Hz)", color="green")
 
+        # High frequency
         high_mask = (freqs >= 2000) & (freqs <= 20000)
         ax.plot(freqs[high_mask], fft_data[high_mask], label="High (2000-20000 Hz)", color="red")
 
@@ -178,7 +203,30 @@ class AudioAnalyzer:
         canvas.get_tk_widget().pack()
         canvas.draw()
 
+    def show_intensity_plot(self):
+        # Clear previous plots in the plot_frame
+        for widget in self.plot_frame.winfo_children():
+            widget.destroy()
+
+        # Calculate intensity as squared amplitude
+        intensity = self.audio_data ** 2
+        time = np.linspace(0, len(self.audio_data) / self.sampling_rate, len(self.audio_data))
+
+        # Plot intensity
+        fig, ax = plt.subplots()
+        ax.plot(time, intensity, color="orange", label="Intensity")
+        ax.set_title("Intensity Plot")
+        ax.set_xlabel("Time (s)")
+        ax.set_ylabel("Intensity (Amplitude^2)")
+        ax.legend()
+
+        canvas = FigureCanvasTkAgg(fig, master=self.plot_frame)
+        canvas.get_tk_widget().pack()
+        canvas.draw()
+
+
 if __name__ == "__main__":
     root = tk.Tk()
     app = AudioAnalyzer(root)
     root.mainloop()
+
