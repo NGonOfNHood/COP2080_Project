@@ -1,0 +1,11 @@
+numpy
+pandas
+matplotlib
+scipy
+librosa
+tkinter
+future
+pydub
+ffmpeg
+# ffmpeg may have to be installed elsewhere
+# but is necessary to convert non-wav files
