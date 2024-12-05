@@ -5,7 +5,7 @@ This project is to design, analyze, and model sound in places such as hallways. 
 
 - **How to Start**:
   - Import the main.py, requirements.txt, and the README.md file over into pycharm. You can do this by dragging the three files into the project directory
-  - Install all the requirements in requirements.txt. If you stumble onto an error, change your intepreter to python 3.11 as this does not work with 3.13
+  - Install all the requirements in requirements.txt. If you stumble onto an error, change your interpreter to python 3.11 as this does not work with 3.13
   - Now follow the basic instructions
 
 - **Basic Instructions**:
