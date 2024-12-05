@@ -2,6 +2,7 @@ numpy
 pandas
 matplotlib
 scipy
+#The rest below are needed for audio conversions
 librosa
 future
 pydub
